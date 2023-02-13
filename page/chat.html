@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chatAPP</title>
+    <link href="style/main.css" rel="stylesheet" type="text/css">
+
+</head>
+<body style="overflow: hidden;">
+    <div class="wrapper" style="min-width:360px;min-height:400px">
+        <div class="top-container">
+            <h1 style="margin-left: 15px;"><strong>CHAT</strong></h1></br>
+            <h2 id="users-count" style="margin-top: 30px; margin-left: 10px; margin-right: 80px; flex: 8;">현재인원 : ???명</h2>
+        </div>
+    
+        <div class="display-container">
+        </div>
+        
+        <text id="newChatAl" style="color:red"></text>
+
+        <div class="input-container">
+            <span>
+                <input type="text" id="msg" class="chatting-input" onkeypress="SEND(document.getElementById('msg').value, event)">
+                <input type="submit" id="send" class="send-button" value="전송" onClick="SEND(document.getElementById('msg').value, true)">
+            </span>
+        </div>
+
+    </div>
+
+    <script>
+        function onClickUpload() {
+            let myInput = document.getElementById("image-input");
+            myInput.click();
+        }
+    </script>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/chatHTML.js"></script>
+
+
+</body> 
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rooms</title>
+    <link href="style/main.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+        <script src="/socket.io/socket.io.js"></script>
+    <div class="wrapper" style="min-width:350px;min-height:300px">
+        <div class="top-container">
+            <h1 style="margin-left: 15px;flex: 8;"><strong>ROOM</strong></h1>
+            <button style = "    flex-direction: row-reverse; float: right;" onclick="alert('다음 업데이트에 사용 가능.')">방만들기</button>
+
+        </div>
+        <button onclick="location.reload();">새로고침</button>
+        <div class="display-container">
+            <!-- <div id = "Otherchat">ㅎㅇ
+
+                <button>접속</button>
+            </div> -->
+        </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.querySelector('.display-container').innerHTML += `
+            <div id = "Otherchat">모두의 광장
+            <button onclick="join('mainroom')">접속</button>
+            </div> `;
+        document.querySelector('.display-container').innerHTML += `
+            <div id = "Otherchat">사설서버
+            <button onclick="join('editorialServer')">접속</button>
+            </div> `;
+        var socket = io();
+        socket.emit('connectTrial', 'anteroom');
+        socket.emit('roomList');
+        socket.on('roomList', (list) => {
+            for(key in list){
+                if(list[key]=="mainroom")
+                    return;
+
+                document.querySelector('.display-container').innerHTML += `
+                <div id = "Otherchat">${decodeURI(list[key])}
+                    <button onclick="join('${list[key]}')">접속</button>
+                </div> 
+                `; 
+            }
+        });
+
+        function join(name){
+            window.location.href = "/chat?" + name;
+        }
+    </script>
+</body>
+</html>
