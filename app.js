@@ -1,3 +1,5 @@
+//현재 구버전입니다. 현재 진행중인 개인 프로젝트에서 이미지전송기능과 UI수정을 완료한 후에 최신으로 업데이트 될 예정입니다.
+
 const express = require('express');
 const requestIp = require('request-ip');
 const app = express();
