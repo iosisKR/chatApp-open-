@@ -1,5 +1,10 @@
+![Active Development](https://img.shields.io/badge/Maintenance%20Level-Actively%20Developed-brightgreen.svg)
 # chatApp-open-
 오픈소스입니다(node.js)
+
+```git
+git clone https://github.com/iosisKR/chatApp-open-.git
+```
 
 구버전입니다, 업데이트 예정
 
