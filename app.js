@@ -118,9 +118,7 @@ io.on('connection', function (socket) {
 
         //<이미지>
         if(type=='image'){
-            if(msg.size < 1*  1024* 1024) {
-            message(recName, msg, 'image');
-            }
+            message(recName, msg, 'image');hj 
             return;
         }
 
