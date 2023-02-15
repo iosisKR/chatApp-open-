@@ -6,7 +6,6 @@
 git clone https://github.com/iosisKR/chatApp-open-.git
 ```
 
-구버전입니다, 업데이트 예정
 
 현재 제작중인 [웹서비스](https://iosis.kro.kr)의 몇몇의 파일을 제외한 소스입니다.   
 
