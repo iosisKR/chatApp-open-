@@ -5,12 +5,14 @@ const socket = require('socket.io');
 const request = require('request');
 const multer = require("multer");
 const fs = require('fs');
+const session = require('express-session');
 
 const port = 3000;
-const domain = '여기에 도메인 입력';
-let password = createPassworld( Math.floor((Math.random() * 40) + 20));
+const domain = 'domain';
+let password = createPassworld(Math.floor((Math.random() * 40) + 20));
 
 //<<<Express>>>
+
 const server = app.listen(port, () => {
     console.clear();
     console.log(`Server on (URL: ${domain}:${port})`);
@@ -28,16 +30,24 @@ app.get('/rooms', (req, res) => {
     console.log(GetIP(req, true) + '(rooms)');
     res.sendFile(__dirname + '/page/rooms.html');
 });
-
 app.get('/chat', (req, res) => {
     console.log(GetIP(req, true) + '(chat)');
     res.sendFile(__dirname + '/page/chat.html');
 });
 
+app.get(`/%EB%B9%84%EB%B0%80%EB%B2%88%ED%98%B8`, (req, res) =>{
+    console.log(password);
+    res.send('ok.');
+});
+app.get('/ram', (req, res) =>{
+    const used1 = process.memoryUsage().heapUsed / 1024 / 1024;
+    console.log(`약 ${Math.round(used1 * 100) / 100} MB의 메모리를 사용중입니다.`);
+    res.send('ok. '  + Math.round(used1 * 100) / 100);
+});
+
 app.get('/ip', (req, res) => {
     res.send('IP : ' + GetIP(req, true));
 });
-
 app.use(express.static('page'));
 
 //<<<Socket.io>>>
@@ -91,28 +101,31 @@ io.on('connection', function (socket) {
 
 
     socket.on('SEND', function (msg, type) {
-        let date = new Date();
-        let time = date.getHours() + ":"+ date.getMinutes();
+        
         if(Array.from(socket.rooms)[1]=='anteroom')
             return;
 
         try{
-        var recName = names[socket.id][0]; //rec(전송자)이름
+            var recName = names[socket.id][0]; //rec(전송자)이름
         } catch (e){
-            socket.emit('message', '알수없는사용자', '튕김증상', `<wrongman style = "color: red">${error(-9999)}</wrongman>`, 'wrong', time);
+            socket.emit('message', '알수없는사용자', '튕김증상', `<wrongman style = "color: red">${error('-9999')}</wrongman>`, 'wrong', '99:99');
+            return;
+        }
+
+        let date = new Date();
+        let time = date.getHours() + ":"+ date.getMinutes();
+
+
+        //<이미지>
+        if(type=='image'){
+            if(msg.size < 1*  1024* 1024) {
+            message(recName, msg, 'image');
+            }
             return;
         }
 
         console.log(`[${socket.id}]${recName}: ${msg}`);
         saveLog(`[${socket.id}]${recName}: ${msg}`);
-
-
-        //<이미지>
-        if(type=='image'){
-            chattingsValue.push([recName, getID(socket.id, 4), msg, 'image', time, names[socket.id][1]]);
-            socket.to(names[socket.id][1]).emit('message', recName, getID(socket.id, 4), msg, 'image', time);
-            return;
-        }
 
         //<명령어>
         if (msg.charAt(0) == '/') {
@@ -131,8 +144,7 @@ io.on('connection', function (socket) {
                             Rmsg += stringToArray[a] + " ";
                         }
                     }
-                    chattingsValue.push([recName, getID(socket.id, 4), Rmsg, 'notice', time, names[socket.id][1]]);
-                    io.to(names[socket.id][1]).emit('message', recName, getID(socket.id, 4), Rmsg, 'notice', time);
+                    message(recName, Rmsg, 'notice', `[${socket.id}]${recName}: ${msg}`);
                 }
                 return;
             }
@@ -166,11 +178,8 @@ io.on('connection', function (socket) {
                     socket.emit('message', recName, getID(socket.id, 4), '존재하지 않는 사용자입니다.', 'wrong',  time);
                     return;
                 }
-
-                console.log(`${stringToArray[1]}에게 ${Rmsg}를 보냈습니다.`);
-                saveLog(`${stringToArray[1]}에게 ${Rmsg}를 보냈습니다.`);
+                message(recName, Rmsg, 'whisper', `${stringToArray[1]}에게 ${Rmsg}를 보냈습니다.`)
                 socket.emit('message', recName, getID(socket.id, 4), '전송 성공.', 'Rename', time);
-                io.to(Recipient).emit('message', recName, getID(socket.id, 4), Rmsg, 'whisper', time);
                 return;
             }
 
@@ -178,19 +187,14 @@ io.on('connection', function (socket) {
             if (stringToArray[0] == '/강퇴') { //강퇴
                 if (stringToArray[1] == password) {
                     if (stringToArray[2] == 'all') {
-                        chattingsValue.push([recName, getID(socket.id, 4), '[공지]서버 재시작을 위해 모두 퇴장이 되셨습니다.', 'notice', time, names[socket.id][1]]);
-                        saveLog(`[공지]서버 재시작을 위해 모두 퇴장이 되셨습니다.`);
-                        io.to(names[socket.id][1]).emit('message', recName, getID(socket.id, 4), '[공지]서버 재시작을 위해 모두 퇴장이 되셨습니다.', 'notice', time);
-                        io.to(names[socket.id][1]).emit('GETOUT', true);
+                        message(recName, '[공지]서버 재시작을 위해 모두 퇴장이 되셨습니다.', 'notice', `[공지]서버 재시작을 위해 모두 퇴장이 되셨습니다.`);
+                        io.emit('GETOUT', true);
                         return;
                     }
 
-                    io.emit('GETOUT');
-                    chattingsValue.push([names[stringToArray[2][0]], getID(socket.id, 4), '님이 강퇴되셨습니다.', 'kick', time, names[socket.id][1]]);
-                    saveLog(names[stringToArray[2][0]] + '님이 강퇴되셨습니다.');
-                    io.to(names[socket.id][1]).emit('message', names[stringToArray[2][0]], getID(socket.id, 4), '님이 강퇴되셨습니다.', 'kick', time);
+                    io.to(names[socket.id][1]).emit('GETOUT');
+                    message(name[stringToArray[2][0]], '님이 강퇴되셨습니다.', 'kick', names[stringToArray[2][0]] + '님이 강퇴되셨습니다.')
                 }
-
                 return;
             }
 
@@ -198,10 +202,8 @@ io.on('connection', function (socket) {
             if (stringToArray[0] == '/채팅리셋') { //채팅리셋
                 if (stringToArray[1] == password) {
                     chattingsValue = [];
-                    io.to(names[socket.id][1]).emit('resetmessage');
-                    chattingsValue.push([recName, getID(socket.id, 4), '님이 채팅을 리셋시켰습니다.', 'notice', time, names[socket.id][1]]);
-                    saveLog('[' + socket.id + ']' + recName + '님이 채팅을 리셋시켰습니다.');
-                    io.to(names[socket.id][1]).emit('message', recName, getID(socket.id, 4), recName + '님이 채팅을 리셋시켰습니다.', 'notice', time);
+                    io.emit('resetmessage'); 
+                    message(recName, recName + '님이 채팅을 리셋시켰습니다.', 'notice', '[' + socket.id + ']' + recName + '님이 채팅을 리셋시켰습니다.')
                 }
                 return;
             }
@@ -233,13 +235,7 @@ io.on('connection', function (socket) {
             return;
         }
 
-        if(msg.slice(0, 4)=='blob'){
-            chattingsValue.push([recName, getID(socket.id, 4), msg, 'image', time, names[socket.id][1]]);
-            socket.to(names[socket.id][1]).emit('message', recName, getID(socket.id, 4), msg, 'image', time);
-            return;
-        }
-        chattingsValue.push([recName, getID(socket.id, 4), msg, 'chat', time, names[socket.id][1]]);
-        socket.to(names[socket.id][1]).emit('message', recName, getID(socket.id, 4), msg, 'chat', time);
+        message(recName, msg, 'chat', `[${socket.id}]${recName}: ${msg}`);
     });
 
 
@@ -248,20 +244,16 @@ io.on('connection', function (socket) {
         try{
         var oldMsg = names[socket.id][0];
         }catch (e){
-            socket.emit('message', '알수없는사용자', '튕김증상', `<wrongman style = "color: red">${error(-9999)}</wrongman>`, 'wrong', time);
+            socket.emit('message', '알수없는사용자', '튕김증상', `<wrongman style = "color: red">${error('-9999')}</wrongman>`, 'wrong', time);
             return;
         }
         msg = msg.split(' ').join('');
         if (msg.length > 20 || msg == 'null' || msg == '' || msg == oldMsg)
             return;
 
-        let date = new Date();
-        let time = date.getHours() + ":"+ date.getMinutes();
         names[socket.id][0] = msg;
-        console.log(`[${socket.id}]${oldMsg} -> ${msg} (이름변경)`);
-        saveLog(`[${socket.id}]${oldMsg} -> ${msg} (이름변경)`);
-        chattingsValue.push([msg, getID(socket.id, 4), `${oldMsg}님이 ${msg}(으)로 이름을 변경하셨습니다.`, 'information', time, names[socket.id][1]]);
-        io.to(names[socket.id][1]).emit('message', msg, getID(socket.id, 4), `${oldMsg}님이 ${msg}(으)로 이름을 변경하셨습니다.`, 'information', time);
+
+        message(msg, `${oldMsg}님이 ${msg}(으)로 이름을 변경하셨습니다.`, 'information', `[${socket.id}]${oldMsg} -> ${msg} (이름변경)`);
     });
 
 
@@ -277,34 +269,45 @@ io.on('connection', function (socket) {
     socket.on('disconnect', function () {
         accessor--;
         io.emit('users.count', accessor);
-        //만약 방이 room선택하는곳이라면 어쩌고저쩌고
-        if (Array.from(socket.rooms)[1] == 'anteroom') {
-        } else {
-            let date = new Date();
-            let time = date.getHours() + ":" + date.getMinutes();
-            try {
-                console.log(names[socket.id][0] + ' 나감');
-                saveLog(`[${socket.id}]${names[socket.id][0]}나감`);
-                chattingsValue.push([names[socket.id][0], getID(socket.id, 4), names[socket.id][0] + '님이 나가셨습니다.', 'information', time, names[socket.id][1]]);
-                io.to(names[socket.id][1]).emit('message', names[socket.id][0], getID(socket.id, 4), names[socket.id][0] + '님이 나가셨습니다.', 'information', time);
-                names = ArrayKeyRemove(names, socket.id, 1);
-            } catch (e) {
-                console.log('알 수 없는 사용자가 나갔습니다');
-            }
-        }
-        
+        if (Array.from(socket.rooms)[1] == 'anteroom')
+            return;
+
+        try {
+            message(names[socket.id][0], names[socket.id][0] + '님이 나가셨습니다.', 'information', `[${socket.id}]${names[socket.id][0]}나감`);
+            names = ArrayKeyRemove(names, socket.id, 1);
+        } catch (e) {}
+
     }); 
 
-        
-    function RoomJoin(){
-        roomList = new Set();
-        var namevalues = Object.values(names);
-        for (var a = 0; a < namevalues.length; a++) {
-            roomList.add(namevalues[a][1]);
+    function message(recName, msg, type, log) {
+        try {
+            let date = new Date();
+            let time = date.getHours() + ":" + date.getMinutes();
+
+            chattingsValue.push([recName, getID(socket.id, 4), msg, type, time, names[socket.id][1]]);
+            socket.to(names[socket.id][1]).emit('message', recName, getID(socket.id, 4), msg, type, time);
+
+            if (!log)
+                return;
+
+            console.log(log);
+            saveLog(log);
+
+        } catch (e) {
+            console.log('error, 잘못된 message()반환');
         }
     }
 
+
 });
+/**새로운 방을 만드는 function (중복없음)*/
+function RoomJoin() {
+    roomList = new Set();
+    var namevalues = Object.values(names);
+    for (var a = 0; a < namevalues.length; a++) {
+        roomList.add(namevalues[a][1]);
+    }
+}
 
 function ArrayKeyRemove(arr, key, count) {
     var counted = 0;
@@ -334,7 +337,7 @@ function GetIP(req, bool) {
 
     return requestIp.getClientIp(req);
 }
-
+/**로그를 시간에 따라 저장하는 function*/
 function saveLog(data) {
     now = new Date();
     fs.appendFileSync(`log/${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}(log).txt`, data + '\n');
@@ -354,7 +357,7 @@ function getID(str, a, b) {
     }
     return str.substr(a, b == 'max' ? str.length : b);
 }
-
+/**강력한 비밀번호를 만드는 function*/
 function createPassworld(count){
     let chars =`0123456789!@#$%^&*()-_=+ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`;
 
@@ -372,6 +375,32 @@ function createPassworld(count){
 
     return pw;
 }
+
+/**!!!구버전!!!비밀번호를 만드는 function*/
+function _old_temp_pw_issuance(count) {
+    let ranValue1 = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+    let ranValue2 = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'];
+    let ranValue3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+    let ranValue4 = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '-', '_', '=', '.'];
+
+    var temp_pw = "";
+    if (!count) {
+        count = 5;
+        console.log('temp_pw_issuance()에 값이 참조 되지 않아 기본값 5를 넣었습니다, 빠른 시일내에 고치세요.');
+    }
+    for (i = 0; i < count; i++) {
+
+        let ranPick1 = Math.floor(Math.random() * ranValue1.length);
+        let ranPick2 = Math.floor(Math.random() * ranValue2.length);
+        let ranPick3 = Math.floor(Math.random() * ranValue3.length);
+        let ranPick4 = Math.floor(Math.random() * ranValue4.length);
+        temp_pw = temp_pw + ranValue1[ranPick1] + ranValue2[ranPick2] + ranValue3[ranPick3] + ranValue4[ranPick4];
+    }
+
+    return temp_pw;
+}
+
+/**error코드의 설명을 반환하는 function*/
 function error(code){
     switch(code){
         case('-9999'):
@@ -386,5 +415,5 @@ function error(code){
 
 app.get('*', (req, res) => {
     res.send('알 수 없 는 페 이 지 But no problem!!!!, 아래 버튼을 누 른 다 면 된다!!!! 놀라운!!! 엄청난!!! new!!!' + `</br>
-     <button type="button" class="navyBtn" onClick="location.href='/'">누르세요</button>`);
+     <button type="button" class="navyBtn" onClick="location.href='https://iosis.kro.kr'">누르세요</button>`);
 });

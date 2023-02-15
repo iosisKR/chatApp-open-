@@ -1,3 +1,7 @@
+//이거 보는 사람중에 이거 숨길 수 있으면 말좀...해주삼...
+if(window.location.search=='?anteroom'){
+    location.replace('/rooms'); 
+}
 
 //Document_Values>>
 const displayContainer = document.querySelector('.display-container');
@@ -19,7 +23,7 @@ try {
 } catch (error) {
     value = 'ghost'
 }
-console.log(window.location.search);
+
 //<<Name>>
 let Myname = prompt('이름 입력(20글자 이내 / 실제 이름X', value);
 Myname = Myname.split(' ').join('');
@@ -39,9 +43,11 @@ var socket = io();
 socket.emit('connectTrial', window.location.search);
 
 socket.emit('connectMessage', Myname);
+
 socket.on('Rename', (msg) => {
     Myname = msg;
 });
+
 let mean143; //CM value
 socket.on('이전내용보내기', (msg) => {
     if(Myname == 'CM')
@@ -49,23 +55,16 @@ socket.on('이전내용보내기', (msg) => {
     for (var a = 0; a < msg.length; a++) {
         displayContainer.innerHTML += getHTMLstyle(msg[a][0], msg[a][1], msg[a][2], msg[a][3], msg[a][4]);
     }
-    displayContainer.scrollTop = displayContainer.scrollHeight - 300;
+    displayContainer.scrollTo(0, displayContainer.scrollHeight);
 });
 
 socket.on('message', (name, id, msg, type, time) => {
-
-    var scrollTop = displayContainer.scrollTop;
-    var scrollHeight = displayContainer.scrollHeight;
-    var clientHeight = displayContainer.clientHeight;
-
-    isBotton = (scrollHeight - scrollTop === clientHeight);
-
 
     displayContainer.innerHTML += getHTMLstyle(name, id, msg, type, time);
 
     if (isBotton) {
         backMsgs = 0;
-        displayContainer.scrollTop = displayContainer.scrollHeight - 300;
+        displayContainer.scrollTo(0, displayContainer.scrollHeight);
     } else {
         backMsgs++;
     }
@@ -76,13 +75,13 @@ socket.on('users.count', function (number) {
 socket.on('return', function (names) {
     console.log(names);
     displayContainer.innerHTML += '접속자 목록: ' + names + '</br>';
-    displayContainer.scrollTop = displayContainer.scrollHeight - 300;
+    displayContainer.scrollTo(0, displayContainer.scrollHeight);
 });
 socket.on('resetmessage', function () {
     displayContainer.innerHTML = '';
 });
 socket.on('GETOUT', function (msg) {
-    let url = msg ? 'https://namu.wiki/w/%EA%B0%95%EC%A0%9C%ED%87%B4%EC%9E%A5' : 'https://namu.wiki/w/%EA%B0%95%EC%A0%9C%ED%87%B4%EC%9E%A5';
+    let url = msg ? 'http://iosis.kro.kr' : 'https://namu.wiki/w/%EA%B0%95%EC%A0%9C%ED%87%B4%EC%9E%A5';
     location.replace(url);
 });
 
@@ -98,15 +97,21 @@ function SEND(msg, e) { //몇초걸린지 확인하게 해주삼.
         
         var date = new Date();
         let time = date.getHours() + ":"+ date.getMinutes();
-
-        displayContainer.innerHTML += `
+        displayContainer.innerHTML += e!='image' ? `
         <div id="Me" style ="text-align:right;">
             <time>${time}</time>
             <span id ="Mychat">${msg}</span>
+        </div> 
+        ` : `
+        <div id="Me" style ="text-align:right;">
+            <time>${time}</time>
+            <span id ="Mychat"><img src="${URL.createObjectURL(new Blob([msg]))} " style ="max-width: 480px; max-height:270px;" alt="img" onload="scrollbotten()"/></span>
         </div>
         `;
+
+
         isBotton = true;
-        displayContainer.scrollTop = displayContainer.scrollHeight - 300;
+        displayContainer.scrollTo(0, displayContainer.scrollHeight);
 
 
 
@@ -136,7 +141,7 @@ function CheckList() {
     socket.emit('CheckList');
 }
 
-function Update() {
+displayContainer.addEventListener('scroll', function() {
     var scrollTop = displayContainer.scrollTop;
     var scrollHeight = displayContainer.scrollHeight;
     var clientHeight = displayContainer.clientHeight;
@@ -157,6 +162,14 @@ function Update() {
             backMsgs = 0;
         }
     }
+});
+
+function Update() {
+}
+
+function scrollbotten(){
+    if(isBotton)
+        displayContainer.scrollTo(0, displayContainer.scrollHeight);
 }
 
 function getHTMLstyle(name, id, msg, type, time) {
@@ -202,10 +215,14 @@ function getHTMLstyle(name, id, msg, type, time) {
             `;
 
         case('image'):
-            var img = URL.createObjectURL(msg);
-            console.log(msg);   
+            img = URL.createObjectURL(new Blob([msg]));
             return`
-            <img src="${img}" style ="max-width: 50%; height:auto;" alt="${msg}">
+            <span id="Other">
+                <name>${name}</name>
+                <sid>[${id}]</sid>
+                </br>
+                <span id = "Otherchat"><img src="${img}" style ="max-width: 480px; max-height:270px;" alt="img" onload="scrollbotten()"></span><time>${time}</time>
+            </span></br>
             
             `;
 
@@ -214,4 +231,46 @@ function getHTMLstyle(name, id, msg, type, time) {
             console.log("3번");
             break;
     }
+}
+
+function loadFile(input) {
+    var file = input.files[0];	//선택된 파일 가져오기
+       var maxSize = 1 * 1024 * 1024;
+		var fileSize = file.size;
+        
+
+        //사진 파일 용량이 1MB이상이면 튕기는걸로 확인
+
+
+        if (!file.type.match("image/.*")) {
+        alert('이미지 파일만 업로드가 가능합니다.');    
+        return;
+        }
+
+
+
+        if(fileSize > maxSize){
+			alert("첨부파일 사이즈는 1MB 이내로 등록 가능합니다. (" + byteCalculation(fileSize) + ")");
+            return;
+		}
+
+        SEND(file, 'image');
+        input.value ='';
+};
+function byteCalculation(bytes) {
+ 
+    var bytes = parseInt(bytes);
+
+    var s = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB'];
+
+    var e = Math.floor(Math.log(bytes)/Math.log(1024));
+
+   
+
+    if(e == "-Infinity") return "0 "+s[0]; 
+
+    else 
+
+    return (bytes/Math.pow(1024, Math.floor(e))).toFixed(2)+" "+s[e];
+
 }

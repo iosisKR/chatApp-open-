@@ -13,6 +13,7 @@
         <div class="top-container">
             <h1 style="margin-left: 15px;"><strong>CHAT</strong></h1></br>
             <h2 id="users-count" style="margin-top: 30px; margin-left: 10px; margin-right: 80px; flex: 8;">현재인원 : ???명</h2>
+            <input type="button" class="checkButton"></input>
         </div>
     
         <div class="display-container">
@@ -23,11 +24,13 @@
         <div class="input-container">
             <span>
                 <input type="text" id="msg" class="chatting-input" onkeypress="SEND(document.getElementById('msg').value, event)">
-                <input type="submit" id="send" class="send-button" value="전송" onClick="SEND(document.getElementById('msg').value, true)">
+                    <input id="image-input" accept="image/*" type="file" style="width: 0; height: 0;     visibility: hidden;" onchange="loadFile(this)"/>
+                    <button id="image-button" onclick="onClickUpload();"></button>
+                    <input type="submit" id="send" class="send-button" value="전송" onClick="SEND(document.getElementById('msg').value, true)">
             </span>
         </div>
 
-    </div>
+    </div>  
 
     <script>
         function onClickUpload() {
@@ -38,7 +41,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/chatHTML.js"></script>
-
 
 </body> 
 </html>
