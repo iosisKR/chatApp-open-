@@ -50,11 +50,12 @@ app.get('/ip', (req, res) => {
 });
 app.use(express.static('page'));
 
+//아래 코드들 중에서 더 좋은 방법으로 해결할 수 있는 것은 다음 업데이트에 적용을 시키겠습니다.
 //<<<Socket.io>>>
 let accessor = 0; //현재 동시접속자수입니다.
 let names = []; //[socket.id : name, roomName]
 let chattingsValue = []; //채팅기록. [name, id, msg, type, date, roomName]
-let rooms = []; //[roomName : 비번 [접속자들]]
+let rooms = []; //[roomName : 비번 [접속자들]] 현재 미사용
 
 io.on('connection', function (socket) {
     accessor++;
